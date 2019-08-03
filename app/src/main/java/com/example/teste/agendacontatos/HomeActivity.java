@@ -1,0 +1,117 @@
+package com.example.teste.agendacontatos;
+
+import android.content.Intent;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.ContextMenu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.Toast;
+
+import com.example.teste.agendacontatos.banco.PessoaBanco;
+import com.example.teste.agendacontatos.modelo.Pessoa;
+
+import java.util.ArrayList;
+
+public class HomeActivity extends AppCompatActivity {
+    ListView listPessoas;
+    Button btnNovoCadastro;
+    Pessoa pessoa;
+    PessoaBanco pessoaBanco;
+    ArrayList<Pessoa> arrayListPessoa;
+    ArrayAdapter<Pessoa> arrayAdapterPessoa;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_home);
+        listPessoas = (ListView) findViewById(R.id.listpessoas);
+        registerForContextMenu(listPessoas);
+
+
+        btnNovoCadastro = (Button) findViewById(R.id.btnNovoCadastro);
+
+        btnNovoCadastro.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(HomeActivity.this, FormPessoa.class);
+                startActivity(i);
+            }
+        });
+
+        listPessoas.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Pessoa pessoaEnviada = (Pessoa) arrayAdapterPessoa.getItem(position);
+
+                Intent i = new Intent(HomeActivity.this,FormPessoa.class);
+                i.putExtra("pessoa-enviada",pessoaEnviada);
+                startActivity(i);
+            }
+        });
+
+        listPessoas.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                pessoa = arrayAdapterPessoa.getItem(position);
+                return false;
+            }
+        });
+
+    }
+
+    public void populaLista(){
+        pessoaBanco = new PessoaBanco(HomeActivity.this);
+
+        arrayListPessoa = pessoaBanco.selectAllPessoa();
+        pessoaBanco.close();
+
+        if(listPessoas != null){
+
+
+
+        arrayAdapterPessoa = new ArrayAdapter<Pessoa>(HomeActivity.this,android.R.layout.simple_list_item_1,arrayListPessoa);
+
+        listPessoas.setAdapter(arrayAdapterPessoa);
+
+        }
+    }
+
+    protected void onResume(){
+        super.onResume();
+        populaLista();
+    }
+
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        MenuItem mDelete = menu.add("Delete Registro");
+        mDelete.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                long retornoDB;
+                pessoaBanco = new PessoaBanco(HomeActivity.this);
+                retornoDB = pessoaBanco.excluirPessoa(pessoa);
+                pessoaBanco.close();
+
+                if (retornoDB == -1){
+                    alert("Erro de exclusão");
+                }else{
+                    alert("Registro excluido com sucesso");
+                }
+                populaLista();
+                return false;
+            }
+        });
+        super.onCreateContextMenu(menu, v, menuInfo);
+    }
+
+    private void alert(String s){
+        Toast.makeText(this,s,Toast.LENGTH_SHORT).show();
+
+    }
+
+}
